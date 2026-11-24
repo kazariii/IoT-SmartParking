@@ -59,6 +59,15 @@ bool updateInput(DebouncedInput &in, bool raw) {
   return false;
 }
 
+// Salinan status slot untuk task jaringan (core lain), lihat network.ino.
+volatile bool sharedSlotOccupied = false;
+// Mode Manual: plang hanya digerakkan dari dashboard. Ditulis oleh network.ino.
+volatile bool manualMode = false;
+
+// Perintah plang dari dashboard. Ditulis oleh network.ino, diambil oleh loop().
+enum GateCmd : uint8_t { GATE_CMD_NONE, GATE_CMD_OPEN, GATE_CMD_CLOSE };
+volatile GateCmd pendingGateCmd = GATE_CMD_NONE;
+
 bool readSlotRaw() { return digitalRead(PIN_SLOT_SENSOR) == LOW; }
 bool readBeamRaw() { return digitalRead(PIN_BEAM) == LOW; }
 
@@ -92,6 +101,7 @@ bool gateOpen = false;
 unsigned long gateOpenedAt = 0;
 unsigned long beamClearedAt = 0;  // kapan beam terakhir menjadi bersih
 unsigned long deniedAt = 0;       // kapan terakhir akses ditolak (0 = belum pernah)
+bool manualCloseRequested = false; // TUTUP manual menunggu beam bersih
 
 void setGate(bool open) {
   gateOpen = open;
@@ -103,7 +113,8 @@ void setGate(bool open) {
 
 // Dipanggil saat beam berubah dari bersih menjadi terhalang.
 void onBeamBroken() {
-  if (gateOpen) return;  // mobil yang sama masih lewat
+  if (gateOpen) return;    // mobil yang sama masih lewat
+  if (manualMode) return;  // mode Manual: beam tidak membuka plang
   if (slotInput.stable) {
     deniedAt = millis();
     beep(3);
@@ -113,7 +124,27 @@ void onBeamBroken() {
   }
 }
 
+void handleGateCommand() {
+  GateCmd cmd = pendingGateCmd;
+  if (cmd == GATE_CMD_NONE) return;
+  pendingGateCmd = GATE_CMD_NONE;
+
+  if (!manualMode) {
+    Serial.println("Perintah plang diabaikan: mode Auto");
+    return;
+  }
+  if (cmd == GATE_CMD_OPEN) {
+    manualCloseRequested = false;
+    if (!gateOpen) setGate(true);
+  } else {
+    manualCloseRequested = gateOpen;
+  }
+}
+
 void updateGate() {
+  if (!manualMode) manualCloseRequested = false;  // kembali ke Auto: logika otomatis yang menutup
+  handleGateCommand();
+
   if (updateInput(beamInput, readBeamRaw())) {
     if (beamInput.stable) {
       onBeamBroken();
@@ -122,8 +153,15 @@ void updateGate() {
     }
   }
 
-  // Pengaman: plang hanya menutup jika beam bersih cukup lama.
-  if (gateOpen && !beamInput.stable && millis() - beamClearedAt >= GATE_CLOSE_DELAY_MS) {
+  // Tutup otomatis (hanya mode Auto). Pengaman: beam harus bersih cukup lama.
+  if (!manualMode && gateOpen && !beamInput.stable &&
+      millis() - beamClearedAt >= GATE_CLOSE_DELAY_MS) {
+    setGate(false);
+  }
+
+  // Tutup manual. Pengaman: ditunda selama beam terhalang.
+  if (manualCloseRequested && !beamInput.stable) {
+    manualCloseRequested = false;
     setGate(false);
   }
 }
@@ -142,6 +180,7 @@ void lcdPrintLine(uint8_t row, const char *text) {
 
 const char *gateMessage() {
   unsigned long now = millis();
+  if (manualMode) return manualCloseRequested ? "Hati-hati" : "Mode: MANUAL";
   if (gateOpen) {
     if (beamInput.stable && now - gateOpenedAt >= WELCOME_MSG_MS) return "Hati-hati";
     return "Silakan Masuk";
@@ -181,11 +220,15 @@ void setup() {
   initInput(slotInput, readSlotRaw());
   initInput(beamInput, readBeamRaw());
   beamClearedAt = millis();
+  sharedSlotOccupied = slotInput.stable;
   Serial.printf("Slot awal: %s\n", slotInput.stable ? "TERISI" : "KOSONG");
+
+  startNetwork();
 }
 
 void loop() {
   if (updateInput(slotInput, readSlotRaw())) {
+    sharedSlotOccupied = slotInput.stable;
     Serial.printf("Slot: %s\n", slotInput.stable ? "TERISI" : "KOSONG");
   }
   updateGate();
