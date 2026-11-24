@@ -1,7 +1,5 @@
 # Desain Smart Parking
 
-Tugas Akhir IoT. Tim 4 orang. Deadline sekitar 8 Desember 2026.
-
 ## Ringkasan
 
 Maket parkir 1 slot dengan 1 gerbang untuk masuk dan keluar. ESP32 membaca sensor slot (FC-51) dan sensor gerbang (IR break beam). ESP32 menggerakkan plang (servo) dan menampilkan status di LCD, LED, dan buzzer. Status dan kontrol plang tersedia secara remote lewat MQTT (EMQX Serverless) dan dashboard Node-RED.
