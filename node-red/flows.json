@@ -1,0 +1,460 @@
+[
+  {
+    "id": "sp_tab",
+    "type": "tab",
+    "label": "Smart Parking",
+    "disabled": false,
+    "info": ""
+  },
+  {
+    "id": "sp_tls",
+    "type": "tls-config",
+    "name": "EMQX TLS",
+    "cert": "",
+    "key": "",
+    "ca": "",
+    "certname": "",
+    "keyname": "",
+    "caname": "",
+    "servername": "",
+    "verifyservercert": true,
+    "alpnprotocol": ""
+  },
+  {
+    "id": "sp_broker",
+    "type": "mqtt-broker",
+    "name": "EMQX Serverless",
+    "broker": "xxxxxxxx.ala.asia-southeast1.emqxsl.com",
+    "port": "8883",
+    "tls": "sp_tls",
+    "clientid": "",
+    "autoConnect": true,
+    "usetls": true,
+    "protocolVersion": 4,
+    "keepalive": 60,
+    "cleansession": true,
+    "autoUnsubscribe": true,
+    "birthTopic": "",
+    "birthQos": "0",
+    "birthRetain": "false",
+    "birthPayload": "",
+    "birthMsg": {},
+    "closeTopic": "",
+    "closeQos": "0",
+    "closeRetain": "false",
+    "closePayload": "",
+    "closeMsg": {},
+    "willTopic": "",
+    "willQos": "0",
+    "willRetain": "false",
+    "willPayload": "",
+    "willMsg": {},
+    "userProps": "",
+    "sessionExpiry": ""
+  },
+  {
+    "id": "sp_base",
+    "type": "ui-base",
+    "name": "Smart Parking",
+    "path": "/dashboard",
+    "appIcon": "",
+    "includeClientData": true,
+    "acceptsClientConfig": [
+      "ui-notification",
+      "ui-control"
+    ],
+    "showPathInSidebar": false,
+    "headerContent": "page",
+    "navigationStyle": "default",
+    "titleBarStyle": "default",
+    "showReconnectNotification": true,
+    "notificationDisplayTime": 1,
+    "showDisconnectNotification": true,
+    "allowInstall": false
+  },
+  {
+    "id": "sp_theme",
+    "type": "ui-theme",
+    "name": "Default",
+    "colors": {
+      "surface": "#fcfcfd",
+      "primary": "#0d74ce",
+      "bgPage": "#f9f9fb",
+      "groupBg": "#ffffff",
+      "groupOutline": "#d9d9e0"
+    },
+    "sizes": {
+      "density": "default",
+      "pagePadding": "12px",
+      "groupGap": "12px",
+      "groupBorderRadius": "4px",
+      "widgetGap": "12px"
+    }
+  },
+  {
+    "id": "sp_page",
+    "type": "ui-page",
+    "name": "Parkir",
+    "ui": "sp_base",
+    "path": "/parkir",
+    "icon": "car",
+    "layout": "grid",
+    "theme": "sp_theme",
+    "breakpoints": [
+      {
+        "name": "Default",
+        "px": 0,
+        "cols": 3
+      },
+      {
+        "name": "Tablet",
+        "px": 576,
+        "cols": 6
+      },
+      {
+        "name": "Small Desktop",
+        "px": 768,
+        "cols": 9
+      },
+      {
+        "name": "Desktop",
+        "px": 1024,
+        "cols": 12
+      }
+    ],
+    "order": 1,
+    "className": "",
+    "visible": "true",
+    "disabled": "false"
+  },
+  {
+    "id": "sp_group",
+    "type": "ui-group",
+    "name": "Status",
+    "page": "sp_page",
+    "width": 6,
+    "height": 1,
+    "order": 1,
+    "showTitle": true,
+    "className": "",
+    "visible": "true",
+    "disabled": "false",
+    "groupType": "default"
+  },
+  {
+    "id": "sp_mqtt_slot",
+    "type": "mqtt in",
+    "z": "sp_tab",
+    "name": "slot",
+    "topic": "smartparking/kelompok1/slot",
+    "qos": "1",
+    "datatype": "utf8",
+    "broker": "sp_broker",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 110,
+    "y": 80,
+    "wires": [
+      [
+        "sp_fn_slot"
+      ]
+    ]
+  },
+  {
+    "id": "sp_fn_slot",
+    "type": "function",
+    "z": "sp_tab",
+    "name": "formatSlot",
+    "func": "// Node-RED function node: formatSlot\n// Input : msg.payload dari topik smartparking/<idkelompok>/slot (\"KOSONG\" / \"TERISI\")\n// Output: teks + warna untuk widget ui-text (Dashboard 2.0)\n\nconst status = String(msg.payload).trim().toUpperCase();\n\nif (status === \"KOSONG\") {\n    msg.payload = \"KOSONG\";\n    msg.ui_update = { color: \"#1a7f37\" };\n} else if (status === \"TERISI\") {\n    msg.payload = \"TERISI\";\n    msg.ui_update = { color: \"#cf222e\" };\n} else {\n    node.warn(\"Payload slot tidak dikenal: \" + msg.payload);\n    return null;\n}\n\nreturn msg;\n",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 300,
+    "y": 80,
+    "wires": [
+      [
+        "sp_ui_slot"
+      ]
+    ]
+  },
+  {
+    "id": "sp_ui_slot",
+    "type": "ui-text",
+    "z": "sp_tab",
+    "group": "sp_group",
+    "order": 1,
+    "width": 0,
+    "height": 0,
+    "name": "Status Slot",
+    "label": "Status Slot",
+    "format": "{{msg.payload}}",
+    "layout": "row-spread",
+    "style": true,
+    "font": "Helvetica",
+    "fontSize": 20,
+    "color": "#717171",
+    "wrapText": false,
+    "className": "",
+    "value": "payload",
+    "valueType": "msg",
+    "x": 500,
+    "y": 80,
+    "wires": []
+  },
+  {
+    "id": "sp_mqtt_mode",
+    "type": "mqtt in",
+    "z": "sp_tab",
+    "name": "mode",
+    "topic": "smartparking/kelompok1/mode",
+    "qos": "1",
+    "datatype": "utf8",
+    "broker": "sp_broker",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 110,
+    "y": 160,
+    "wires": [
+      [
+        "sp_fn_mode_switch",
+        "sp_fn_btn_state"
+      ]
+    ]
+  },
+  {
+    "id": "sp_fn_mode_switch",
+    "type": "function",
+    "z": "sp_tab",
+    "name": "modeToSwitch",
+    "func": "// Node-RED function node: modeToSwitch\n// Input : msg.payload dari topik smartparking/<idkelompok>/mode (\"AUTO\" / \"MANUAL\"),\n//         yaitu mode asli yang dilaporkan ESP32.\n// Output: true (MANUAL) / false (AUTO) untuk widget ui-switch.\n// Switch diset \"decouple\", jadi pesan ini hanya mengubah tampilan dan tidak\n// dikirim balik ke ESP32 (tidak ada loop echo).\n\nconst mode = String(msg.payload).trim().toUpperCase();\n\nif (mode !== \"AUTO\" && mode !== \"MANUAL\") {\n    node.warn(\"Payload mode tidak dikenal: \" + msg.payload);\n    return null;\n}\n\nmsg.payload = mode === \"MANUAL\";\nreturn msg;\n",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 300,
+    "y": 160,
+    "wires": [
+      [
+        "sp_ui_mode"
+      ]
+    ]
+  },
+  {
+    "id": "sp_ui_mode",
+    "type": "ui-switch",
+    "z": "sp_tab",
+    "name": "Mode Manual",
+    "label": "Mode Manual",
+    "group": "sp_group",
+    "order": 2,
+    "width": 0,
+    "height": 0,
+    "passthru": false,
+    "decouple": true,
+    "topic": "topic",
+    "topicType": "msg",
+    "style": "",
+    "className": "",
+    "layout": "row-spread",
+    "clickableArea": "switch",
+    "onvalue": "true",
+    "onvalueType": "bool",
+    "onicon": "",
+    "oncolor": "",
+    "offvalue": "false",
+    "offvalueType": "bool",
+    "officon": "",
+    "offcolor": "",
+    "x": 500,
+    "y": 160,
+    "wires": [
+      [
+        "sp_fn_mode_set"
+      ]
+    ]
+  },
+  {
+    "id": "sp_fn_mode_set",
+    "type": "function",
+    "z": "sp_tab",
+    "name": "switchToModeSet",
+    "func": "// Node-RED function node: switchToModeSet\n// Input : msg.payload dari ui-switch saat diklik (true = MANUAL, false = AUTO).\n// Output: perintah ke topik smartparking/<idkelompok>/mode/set.\n// Posisi switch baru berubah setelah ESP32 membalas lewat topik mode.\n\nmsg.payload = msg.payload === true ? \"MANUAL\" : \"AUTO\";\nreturn msg;\n",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 700,
+    "y": 160,
+    "wires": [
+      [
+        "sp_mqtt_mode_set"
+      ]
+    ]
+  },
+  {
+    "id": "sp_mqtt_mode_set",
+    "type": "mqtt out",
+    "z": "sp_tab",
+    "name": "mode/set",
+    "topic": "smartparking/kelompok1/mode/set",
+    "qos": "1",
+    "retain": "false",
+    "respTopic": "",
+    "contentType": "",
+    "userProps": "",
+    "correl": "",
+    "expiry": "",
+    "broker": "sp_broker",
+    "x": 900,
+    "y": 160,
+    "wires": []
+  },
+  {
+    "id": "sp_fn_btn_state",
+    "type": "function",
+    "z": "sp_tab",
+    "name": "modeToButtonState",
+    "func": "// Node-RED function node: modeToButtonState\n// Input : msg.payload dari topik smartparking/<idkelompok>/mode (\"AUTO\" / \"MANUAL\").\n// Output: { enabled } untuk tombol Buka/Tutup. Tombol aktif hanya di mode Manual.\n// Pesan baru tanpa payload, supaya tombol hanya berubah status aktifnya.\n\nconst mode = String(msg.payload).trim().toUpperCase();\n\nif (mode !== \"AUTO\" && mode !== \"MANUAL\") {\n    node.warn(\"Payload mode tidak dikenal: \" + msg.payload);\n    return null;\n}\n\nreturn { enabled: mode === \"MANUAL\" };\n",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 300,
+    "y": 240,
+    "wires": [
+      [
+        "sp_ui_btn_open",
+        "sp_ui_btn_close"
+      ]
+    ]
+  },
+  {
+    "id": "sp_ui_btn_open",
+    "type": "ui-button",
+    "z": "sp_tab",
+    "group": "sp_group",
+    "name": "Buka",
+    "label": "Buka",
+    "order": 3,
+    "width": 0,
+    "height": 0,
+    "emulateClick": false,
+    "tooltip": "",
+    "color": "",
+    "bgcolor": "",
+    "className": "",
+    "icon": "",
+    "iconPosition": "left",
+    "payload": "BUKA",
+    "payloadType": "str",
+    "topic": "topic",
+    "topicType": "msg",
+    "buttonColor": "",
+    "textColor": "",
+    "iconColor": "",
+    "enableClick": true,
+    "enablePointerdown": false,
+    "pointerdownPayload": "",
+    "pointerdownPayloadType": "str",
+    "enablePointerup": false,
+    "pointerupPayload": "",
+    "pointerupPayloadType": "str",
+    "x": 500,
+    "y": 220,
+    "wires": [
+      [
+        "sp_fn_gate_cmd"
+      ]
+    ]
+  },
+  {
+    "id": "sp_ui_btn_close",
+    "type": "ui-button",
+    "z": "sp_tab",
+    "group": "sp_group",
+    "name": "Tutup",
+    "label": "Tutup",
+    "order": 4,
+    "width": 0,
+    "height": 0,
+    "emulateClick": false,
+    "tooltip": "",
+    "color": "",
+    "bgcolor": "",
+    "className": "",
+    "icon": "",
+    "iconPosition": "left",
+    "payload": "TUTUP",
+    "payloadType": "str",
+    "topic": "topic",
+    "topicType": "msg",
+    "buttonColor": "",
+    "textColor": "",
+    "iconColor": "",
+    "enableClick": true,
+    "enablePointerdown": false,
+    "pointerdownPayload": "",
+    "pointerdownPayloadType": "str",
+    "enablePointerup": false,
+    "pointerupPayload": "",
+    "pointerupPayloadType": "str",
+    "x": 500,
+    "y": 260,
+    "wires": [
+      [
+        "sp_fn_gate_cmd"
+      ]
+    ]
+  },
+  {
+    "id": "sp_fn_gate_cmd",
+    "type": "function",
+    "z": "sp_tab",
+    "name": "buttonToGateCmd",
+    "func": "// Node-RED function node: buttonToGateCmd\n// Input : msg.payload dari tombol dashboard (\"BUKA\" / \"TUTUP\").\n// Output: perintah ke topik smartparking/<idkelompok>/gate/cmd.\n// ESP32 menjalankan perintah hanya di mode Manual, dan menunda TUTUP\n// selama beam terhalang.\n\nconst cmd = String(msg.payload).trim().toUpperCase();\n\nif (cmd !== \"BUKA\" && cmd !== \"TUTUP\") {\n    node.warn(\"Perintah plang tidak dikenal: \" + msg.payload);\n    return null;\n}\n\nmsg.payload = cmd;\nreturn msg;\n",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 700,
+    "y": 240,
+    "wires": [
+      [
+        "sp_mqtt_gate_cmd"
+      ]
+    ]
+  },
+  {
+    "id": "sp_mqtt_gate_cmd",
+    "type": "mqtt out",
+    "z": "sp_tab",
+    "name": "gate/cmd",
+    "topic": "smartparking/kelompok1/gate/cmd",
+    "qos": "1",
+    "retain": "false",
+    "respTopic": "",
+    "contentType": "",
+    "userProps": "",
+    "correl": "",
+    "expiry": "",
+    "broker": "sp_broker",
+    "x": 900,
+    "y": 240,
+    "wires": []
+  }
+]
